@@ -261,9 +261,6 @@ func main() {
 		log.SetOutput(io.Discard)
 	}
 
-	log.Info("Iota")
-	log.Info(UUID)
-
 	p := tea.NewProgram(initialModel())
 	if _, err := p.Run(); err != nil {
 		log.Fatal(err)
