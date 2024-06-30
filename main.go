@@ -22,9 +22,21 @@ var choices = []string{"UUID", "Name", "Password"}
 
 var mainStyle = lipgloss.NewStyle().MarginLeft(2)
 
+const (
+	UUID int = iota
+	Name
+	Password
+)
+
+const (
+	TypeChoiceStage int = iota
+	NumOfOutputsStage
+	ResultStage
+)
+
 type model struct {
 	cursor    int
-	choice    string
+	choice    int
 	textInput textinput.Model
 	err       error
 	quitting  bool
@@ -45,9 +57,9 @@ func initialModel() model {
 	ti.SetValue("5")
 
 	return model{
-		stage:     1,
+		stage:     0,
 		cursor:    0,
-		choice:    "",
+		choice:    0,
 		textInput: ti,
 		err:       nil,
 	}
@@ -63,7 +75,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	if m.stage == 1 {
+	if m.stage == TypeChoiceStage {
 		return updateChoice(msg, m)
 	}
 	return updateNumOf(msg, m)
@@ -77,8 +89,8 @@ func updateChoice(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "enter":
-			m.choice = choices[m.cursor]
-			m.stage = 2
+			m.choice = m.cursor
+			m.stage = NumOfOutputsStage
 			return m, nil
 
 		case "down", "j":
@@ -105,7 +117,7 @@ func updateNumOf(msg tea.Msg, m model) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter, tea.KeyCtrlC, tea.KeyEsc:
-			m.stage = 3
+			m.stage = ResultStage
 			return m, tea.Quit
 		}
 
@@ -129,13 +141,13 @@ func (m model) View() string {
 	log.Info(m.stage)
 
 	switch m.stage {
-	case 1:
+	case TypeChoiceStage:
 		s = typeChoicesView(m)
 		return mainStyle.Render("\n" + s + "\n\n")
-	case 2:
+	case NumOfOutputsStage:
 		s = numberOfChoicesView(m)
 		return mainStyle.Render("\n" + s + "\n\n")
-	case 3:
+	case ResultStage:
 		s = resultView(m)
 		return mainStyle.Render("\n" + s + "\n\n")
 	default:
@@ -181,11 +193,11 @@ func resultView(m model) string {
 	var results []string
 
 	switch m.choice {
-	case "UUID":
+	case UUID:
 		results = generateUUIDs(num)
-	case "Name":
+	case Name:
 		results = generateNames(num)
-	case "Password":
+	case Password:
 		results = generateSecureToken(num)
 	}
 
@@ -248,6 +260,9 @@ func main() {
 	} else {
 		log.SetOutput(io.Discard)
 	}
+
+	log.Info("Iota")
+	log.Info(UUID)
 
 	p := tea.NewProgram(initialModel())
 	if _, err := p.Run(); err != nil {
